@@ -17,7 +17,7 @@ contract JeskeiAsset {
 
     function register(AssetType _asset_type, address _owner, uint _locationType, string memory _location) public {
         
-        bytes32 id = keccak256(abi.encodePacked(_asset_type, _owner, _locationType, _location, block.blockhash(block.number - 1)));
+        bytes32 id = keccak256(abi.encodePacked(_asset_type, _owner, _locationType, _location, blockhash(block.number - 1)));
 
         LocationType locationType;
         string memory location;

@@ -9,99 +9,100 @@ contract JeskeiProduction {
     enum AgeRating{ G, PG, PG13, R, NC17 }
 
     struct Production {
-        bytes20 id;
+        bytes32 id;
         string name;
         string description;
         AgeRating ageRating;
-        bytes20[] assets;
-        bytes20 studio;
+        bytes32[] assets;
+        bytes32 studio;
         uint256 view_Wei;
     }
 
     Production[] private productions;
+    mapping(bytes32 => uint) private productionIndex;
+    mapping(bytes32 => uint) private fees;
 
-    mapping(bytes20 => uint) fees;
+    modifier onlyExistingProduction(bytes32 productionId) {
+        require(productionIndex[productionId] != 0 || (productions.length > 0 && productions[0].id == productionId), "Production does not exist");
+        _;
+    }
 
-    function createProduction(bytes20 studio, string memory name, string memory description, uint age_Rating) public {
-        bytes20 id = keccak256(name, description, age_Rating, studio, block.blockhash(block.number - 1));
-        Production memory newProduction = Production(id, name, description, age_Rating, studio);
+    function createProduction(bytes32 studio, string memory name, string memory description, AgeRating age_Rating) public {
+        bytes32 id = keccak256(abi.encodePacked(name, description, age_Rating, studio, blockhash(block.number - 1)));
+        Production memory newProduction;
+        newProduction.id = id;
+        newProduction.name = name;
+        newProduction.ageRating = age_Rating;
+        newProduction.studio = studio;
         productions.push(newProduction);
+        productionIndex[id] = productions.length - 1;
     }
 
-    function deleteProduction(bytes20 productionId) public {
-        uint element = 0;
+    function deleteProduction(bytes32 productionId) public onlyExistingProduction(productionId) {
+        uint index = productionIndex[productionId];
+        uint lastIndex = productions.length - 1;
 
-        for (uint256 i = 0; i < productions.length; i++) {
-            if (productions[i].id == productionId) {
-                element = i;
+        if (index != lastIndex) {
+            productions[index] = productions[lastIndex];
+            productionIndex[productions[index].id] = index;
+        }
+
+        productions.pop();
+        delete productionIndex[productionId];
+    }
+
+    function transferProduction(bytes32 productionId, bytes32 targetStudio) public onlyExistingProduction(productionId) {
+        uint index = productionIndex[productionId];
+        productions[index].studio = targetStudio;
+    }
+
+    function addAsset(bytes32 productionId, bytes32 assetId) public onlyExistingProduction(productionId) {
+        uint index = productionIndex[productionId];
+        productions[index].assets.push(assetId);
+    }
+
+    function addAssets(bytes32 productionId, bytes32[] memory assetIds) public onlyExistingProduction(productionId) {
+        uint index = productionIndex[productionId];
+        for (uint i = 0; i < assetIds.length; i++) {
+            productions[index].assets.push(assetIds[i]);
+        }
+    }
+
+    function removeAsset(bytes32 productionId, bytes32 assetId) public onlyExistingProduction(productionId) {
+        uint index = productionIndex[productionId];
+        uint assetIndex = 0;
+        bytes32[] storage assets = productions[index].assets;
+
+        for (uint i = 0; i < assets.length; i++) {
+            if (assets[i] == assetId) {
+                assetIndex = i;
+                break;
             }
         }
 
-        for (uint i = element; i < productions.length - 1; i++) {
-            productions[i] = productions[i + 1];
+        for (uint i = assetIndex; i < assets.length - 1; i++) {
+            assets[i] = assets[i + 1];
         }
-        productions.pop(); // Remove the last element
-
+        assets.pop();
     }
 
-    function transferProduction(bytes20 productionId, bytes20 targetStudio) public {
-        for (uint256 i = 0; i < productions.length; i++) {
-            if (productions[i].id == productionId) {
-                productions.studio = targetStudio;
-            }
-        }
-    }
-
-    function addAsset(bytes20 productionId, bytes20 assetId) public
-    {
-        for (uint256 i = 0; i < productions.length; i++) {
-            if (productions[i].id == productionId) {
-                productions[i].assets.push(assetId);
-            }
-        }
-    }
-
-    function addAssets(bytes20 productionId, bytes20[] memory assetIds) public
-    {
-        for (uint256 i = 0; i < productions.length; i++) {
-            if (productions[i].id == productionId) {
-                productions[i].assets.push(assetIds);
-            }
-        }
-    }
-
-    function removeAsset(bytes20 productionId, bytes20 assetId) public
-    {
-        for (uint256 i = 0; i < productions.length; i++) {
-            if (productions[i].id == productionId) {
-                
-                uint256 assetIndex = 0;
-
-                for (uint256 j = 0; j < productions[i].assets.length; j++) {
-                    if (productions[i].assets[j].id == assetId) {
-                        assetIndex = j;
-                    }
-                }
-
-                for (uint j = assetIndex; j < productions[i].assets.length - 1; j++) {
-                    productions[i].assets[j] = productions[i].assets[j + 1];
-                }
-                productions[i].assets.pop(); // Remove the last element
-            }
-        }
-    }
-
-
-    function getStudioProductions(bytes20 studioId) public view returns (bytes20 [] memory) {
-
-        bytes20 studioProductions;
-        
-        for (uint256 i = 0; i < productions.length; i++) {
+    function getStudioProductions(bytes32 studioId) public view returns (bytes32[] memory) {
+        uint count = 0;
+        for (uint i = 0; i < productions.length; i++) {
             if (productions[i].studio == studioId) {
-                studioProductions.push(productions[i].id);
+                count++;
             }
         }
+
+        bytes32[] memory studioProductions = new bytes32[](count);
+        uint index = 0;
+        for (uint i = 0; i < productions.length; i++) {
+            if (productions[i].studio == studioId) {
+                studioProductions[index] = productions[i].id;
+                index++;
+            }
+        }
+
         return studioProductions;
     }
-
 }
