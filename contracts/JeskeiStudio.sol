@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import "./lib/SupportLib.sol";
-
 contract JeskeiStudio {
 
     enum StudioType { Incorporated, Digital, Other }

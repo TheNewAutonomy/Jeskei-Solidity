@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import "./Asset.sol";
-import "./Studio.sol";
+import "./JeskeiAsset.sol";
+import "./JeskeiStudio.sol";
 
 contract JeskeiProduction {
 
