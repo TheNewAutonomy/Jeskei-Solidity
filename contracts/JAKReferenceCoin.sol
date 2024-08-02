@@ -2,7 +2,7 @@
 // Tells the Solidity compiler to compile only from v0.8.13 to v0.9.0
 pragma solidity ^0.8.20;
 
-import "./ConvertLib.sol";
+import "./lib/HelperLib.sol";
 
 // This is just a simple example of a coin-like contract.
 // It is not ERC20 compatible and cannot be expected to talk to other
@@ -26,7 +26,7 @@ contract JAKReferenceCoin {
 	}
 
 	function getBalanceInEth(address addr) public view returns(uint){
-		return ConvertLib.convert(getBalance(addr),2);
+		return HelperLib.convert(getBalance(addr),2);
 	}
 
 	function getBalance(address addr) public view returns(uint) {

@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./lib/HelperLib.sol";
 
 contract Production is ERC721URIStorage, Ownable {
     enum FilmRatingEnum { G, PG, PG13, R, NC17 }
@@ -26,6 +27,7 @@ contract Production is ERC721URIStorage, Ownable {
     event DescriptionUpdated(string oldDescription, string newDescription);
     event FilmRatingUpdated(FilmRatingEnum oldRating, FilmRatingEnum newRating);
     event TagsUpdated(string[] oldTags, string[] newTags);
+    event TagsAdded(string[] tagsAdded);
     event ViewWeiUpdated(uint256 oldViewWei, uint256 newViewWei);
 
     constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) Ownable(msg.sender) {
@@ -88,11 +90,34 @@ contract Production is ERC721URIStorage, Ownable {
         _tags = newTags;
     }
 
+    function addTags(string[] memory newTags) public onlyOwner {
+        emit TagsAdded(newTags);
+
+        for (uint i=0; i < newTags.length; i++) {
+            _tags.push(newTags[i]);
+        }
+    }
+
     function updateViewWei(uint256 newViewWei) public onlyOwner {
         require(newViewWei > 0, "View cost must be greater than zero");
+
+        uint256 minimumFee = 0;
+        for (uint i=0; i < assets.length; i++) {
+            minimumFee = minimumFee + assets[i].view_Wei;
+        }
+
+        require(newViewWei > minimumFee, HelperLib.concatenate("View cost must be greater than ", HelperLib.toString(minimumFee)));
+
         emit ViewWeiUpdated(_view_Wei, newViewWei);
         _view_Wei = newViewWei;
     }
 
-    // Additional functions to manage ProductionAssets can be added here
+     function viewProduction(uint256 tokenId) public valueProvided payable returns (string memory) {
+        return tokenURI(tokenId);
+    }
+
+    modifier valueProvided() {
+        require(msg.value >= _view_Wei);
+        _;
+    }
 }
